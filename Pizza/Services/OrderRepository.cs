@@ -59,7 +59,18 @@ namespace Pizza.Services
         public Task<List<ProductSize>> GetAllProductSizesAsync() => _context.ProductSizes.ToListAsync();
 
         public Task<List<Order>> GetOrdersByCustomerAsync(Guid customerId)=>
-            _context.Orders.Where(o => o.CustomerId == customerId).ToListAsync();   
+            _context.Orders.Where(o => o.CustomerId == customerId).ToListAsync();
+
+        public async Task<List<Order>> GetOrdersByCustomerIdAsync(Guid customerId)
+        {
+            // Пример реализации
+            return await Task.Run(() =>
+            {
+                return _context.Orders
+                    .Where(o => o.CustomerId == customerId)
+                    .ToList();
+            });
+        }
 
         public async Task<Order> UpdateOrderAsync(Order order)
         {

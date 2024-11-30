@@ -9,6 +9,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
 
+
     <Window.Resources>
         <DataTemplate DataType="{x:Type viewModels:AddEditCustomerViewModel}">
             <views:AddEditCustomerView/>
@@ -23,10 +24,6 @@
             <views:OrderView/>
         </DataTemplate>
     </Window.Resources>
-
-    <Window.DataContext>
-        <local:MainWindowViewModel/>
-    </Window.DataContext>
     
     <Grid>
         <Grid.RowDefinitions>
@@ -43,7 +40,7 @@
             <Button Content="клиенты"
                     Command="{Binding NavigationCommand}"
                     CommandParameter="customers"/>
-            
+
             <Button Content="оформить заказ"
                     Command="{Binding NavigationCommand}"
                     CommandParameter="orderPrep"

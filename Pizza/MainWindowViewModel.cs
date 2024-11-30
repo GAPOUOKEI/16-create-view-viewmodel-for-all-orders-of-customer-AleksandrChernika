@@ -7,32 +7,43 @@ using System.Windows;
 using Pizza.Models;
 using Pizza.Services;
 using Pizza.ViewModels;
+using Pizza.Views;
 using Unity;
 
 namespace Pizza
 {
-    class MainWindowViewModel : BindableBase
+    public class MainWindowViewModel : BindableBase
     {
         private AddEditCustomerViewModel _addEditCustomerVewModel;
         private CustomerListViewModel _customerListViewModel;
         private OrderPerpViewModel _orderPrepViewModel;
+        private readonly IOrderRepository _orderRepository;
+        private readonly ICustomerRepository _customerRepository;
         private OrderViewModer _orderViewModel;
 
-        private ICustomerRepository _customerRepository = new CustomerRepository();
-
+        // Конструктор без параметров для XAML
         public MainWindowViewModel()
         {
+            // Разрешаем зависимости через контейнер Unity
+            _orderRepository = RepoContainer.Container.Resolve<IOrderRepository>();
+            _customerRepository = RepoContainer.Container.Resolve<ICustomerRepository>();
+            _orderViewModel = new OrderViewModer(_orderRepository, null); // Инициализация без клиента (для примера)
+
+            // Инициализация команд или других объектов
             NavigationCommand = new RelayCommand<string>(OnNavigation);
-            //_customerListViewModel = new CustomerListViewModel(new CustomerRepository()) ;
-            //_addEditCustomerVewModel = new AddEditCustomerViewModel(new CustomerRepository()) ; 
-            _customerListViewModel = RepoContainer.Container.Resolve<CustomerListViewModel>();  
+
+            // Разрешаем зависимости через контейнер
+            _customerListViewModel = RepoContainer.Container.Resolve<CustomerListViewModel>();
             _addEditCustomerVewModel = RepoContainer.Container.Resolve<AddEditCustomerViewModel>();
 
-            _customerListViewModel.AddCustomerRequested +=NavigationToAddCustomer;
+            _customerListViewModel.AddCustomerRequested += NavigationToAddCustomer;
             _customerListViewModel.EditCustomerRequested += NavigationToEditCustomer;
             _customerListViewModel.PlaceOrderRequested += NavigateToOrder;
-           
+            _customerListViewModel.ViewOrdersRequested += OnViewOrdersRequested;
         }
+
+        // Свойства и команды
+
         private BindableBase _currentViewModel;
         public BindableBase CurrentViewModel
         {
@@ -42,45 +53,63 @@ namespace Pizza
 
         public RelayCommand<string> NavigationCommand { get; private set; }
 
-        //открывать список клиентов
         private void OnNavigation(string dest)
         {
             switch (dest)
             {
                 case "orderPrep":
-                    CurrentViewModel = _orderPrepViewModel; break;
+                    CurrentViewModel = _orderPrepViewModel;
+                    break;
                 case "customers":
                 default:
-                       CurrentViewModel = _customerListViewModel; break;
+                    CurrentViewModel = _customerListViewModel;
+                    break;
             }
         }
-        
-        //открывать окно для редактирования клиента
+
         private void NavigationToEditCustomer(Customer customer)
         {
-            _addEditCustomerVewModel.IsEditeMode = true; 
+            _addEditCustomerVewModel.IsEditeMode = true;
             _addEditCustomerVewModel.SetCustomer(customer);
             CurrentViewModel = _addEditCustomerVewModel;
-
         }
 
-        //открывать окно для добавления клиента
-        //private void NavigationToAddCustomer(Customer cust)----------------------------
         private void NavigationToAddCustomer()
         {
             _addEditCustomerVewModel.IsEditeMode = false;
-            _addEditCustomerVewModel.SetCustomer(new Customer
-            {
-                Id = Guid.NewGuid(),
-            });
+            _addEditCustomerVewModel.SetCustomer(new Customer { Id = Guid.NewGuid() });
             CurrentViewModel = _addEditCustomerVewModel;
-            
         }
 
-        //окно для оформления заказа
+        private void OnViewOrdersRequested(Customer customer)
+        {
+            if (customer == null)
+            {
+                MessageBox.Show("Customer is null. Cannot view orders.");
+                return;
+            }
+
+            var orderViewModel = new OrderViewModer(_orderRepository, customer); // Передаем клиента
+            var orderWindow = new Window
+            {
+                Title = "Заказы клиента",
+                Content = new OrderView { DataContext = orderViewModel },
+                Width = 800,
+                Height = 450
+            };
+
+            orderWindow.ShowDialog();
+        }
+
         private void NavigateToOrder(Customer customer)
         {
-            _orderViewModel.Id = customer.Id;
+            if (customer == null)
+            {
+                MessageBox.Show("Customer is null. Cannot navigate to order.");
+                return;
+            }
+
+            _orderViewModel = new OrderViewModer(_orderRepository, customer);
             CurrentViewModel = _orderViewModel;
         }
     }
